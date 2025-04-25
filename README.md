@@ -269,3 +269,105 @@ Feel free to extend these base scripts for more specific use cases or integratio
 ---
 
 For questions or support regarding the Voltr protocol itself, please refer to the official Voltr documentation.
+
+---
+
+## Drift Strategy Extensions (voltr-drift-scripts)
+
+The following sections detail the additions specific to the `voltr-drift-scripts` project, which builds upon the base functionality to include Drift spot market strategy interactions.
+
+### Additional Configuration (`config/drift.ts`)
+
+This file complements `config/base.ts` and holds parameters specific to the Drift strategy.
+
+- **Strategy Action Parameters:**
+
+  - `depositStrategyAmount`: **Required.** The amount of the **vault's base asset** (defined in `config/base.ts`) to deposit into the Drift strategy, denominated in the smallest units of the base asset (e.g., 1,000,000 for 1 USDC).
+  - `withdrawStrategyAmount`: **Required.** The amount of the **vault's base asset** to withdraw from the Drift strategy, denominated in the smallest units of the base asset.
+
+- **Drift Variables:**
+  - `driftMarketIndex`: **Required.** The numerical index of the Drift spot market to interact with (e.g., `DRIFT.SPOT.USDC.MARKET_INDEX`). Ensure this aligns with the vault's `assetMintAddress` from `config/base.ts`, as **no automatic swaps** are performed by these scripts. Refer to `src/constants/drift.ts` for available market indices and their corresponding assets.
+
+### New Admin Script
+
+- **`src/scripts/admin-add-adaptor.ts`**
+  - **Purpose:** Enables the vault to use Drift strategies by adding the official Voltr Drift Adaptor program (`ADAPTOR_PROGRAM_ID` found in `src/constants/drift.ts`) to the vault's list of approved adaptors. This only needs to be run once per vault.
+  - **Requires:** `vaultAddress` (from `config/base.ts`).
+  - **Uses:** `ADMIN_FILE_PATH`. May update the vault's LUT if `useLookupTable` is true.
+
+### New Manager Scripts
+
+These scripts are executed by the vault's designated Manager.
+
+- **`src/scripts/manager-init-user.ts`**
+
+  - **Purpose:** Initializes the necessary on-chain accounts for the vault to interact with the Drift protocol via the Voltr Drift Adaptor. This creates the Voltr strategy account PDA, the Drift user account PDA (tied to the vault's strategy authority), and associated token accounts. This only needs to be run once per vault.
+  - **Requires:** `vaultAddress`, `assetMintAddress`, `assetTokenProgram` (from `config/base.ts`). Also requires Drift constants like `DRIFT.PROGRAM_ID`, `DRIFT.SPOT.STATE`, `DRIFT.SUB_ACCOUNT_ID`, and the `ADAPTOR_PROGRAM_ID` from `src/constants/drift.ts`. The vault's `name` from `config/base.ts` `vaultParams` is used internally.
+  - **Outputs:** Logs the transaction signature upon successful initialization.
+  - **Uses:** `MANAGER_FILE_PATH`. May update the vault's LUT if `useLookupTable` is true.
+
+- **`src/scripts/manager-deposit-user.ts`**
+
+  - **Purpose:** Deposits funds _from_ the vault _into_ the initialized Drift strategy, specifically depositing into the spot market defined by `driftMarketIndex`.
+  - **No Swaps:** This script **does not perform swaps**. It assumes the vault's `assetMintAddress` (from `config/base.ts`) is the correct asset for the specified `driftMarketIndex` (in `config/drift.ts`).
+  - **Requires:** `vaultAddress`, `assetMintAddress`, `assetTokenProgram`, `lookupTableAddress` (if used) from `config/base.ts`. Also requires `depositStrategyAmount`, `driftMarketIndex` from `config/drift.ts`, and relevant Drift constants and PDAs (derived internally, utilizes `@drift-labs/sdk` for remaining accounts).
+  - **Uses:** `MANAGER_FILE_PATH`.
+
+- **`src/scripts/manager-withdraw-user.ts`**
+  - **Purpose:** Withdraws funds _from_ the Drift strategy (specifically the spot market defined by `driftMarketIndex`) _back into_ the main vault account.
+  - **No Swaps:** This script **does not perform swaps**. The withdrawn asset is assumed to be the vault's base asset.
+  - **Requires:** `vaultAddress`, `assetMintAddress`, `assetTokenProgram`, `lookupTableAddress` (if used) from `config/base.ts`. Also requires `withdrawStrategyAmount`, `driftMarketIndex` from `config/drift.ts`, and relevant Drift constants and PDAs (derived internally, utilizes `@drift-labs/sdk` for remaining accounts).
+  - **Uses:** `MANAGER_FILE_PATH`.
+
+### Drift Strategy Flow
+
+This outlines the typical sequence for setting up and managing the Drift strategy:
+
+1.  **Complete Basic Vault Setup:** Follow steps 1-4 in the [Basic Usage Flow](#basic-usage-flow) to initialize the vault and configure `config/base.ts`. Ensure `assetMintAddress` matches the Drift market you intend to use (e.g., USDC).
+2.  **Configure Drift Parameters:** Edit `config/drift.ts`. Define `depositStrategyAmount`, `withdrawStrategyAmount`, and crucially, the correct `driftMarketIndex` corresponding to your vault's asset.
+3.  **Add Drift Adaptor (Admin):** Run `pnpm ts-node src/scripts/admin-add-adaptor.ts` to authorize the vault to use the Drift adaptor.
+4.  **Initialize Drift User Strategy (Manager):** Run `pnpm ts-node src/scripts/manager-init-user.ts` to set up the on-chain accounts for Drift interaction.
+5.  **Ensure Vault has Funds:** Use `user-deposit-vault.ts` (as the User) if the vault needs funds.
+6.  **Deposit into Drift Strategy (Manager):** Run `pnpm ts-node src/scripts/manager-deposit-user.ts` to allocate funds from the vault to the specified Drift spot market.
+7.  **Query Positions:** Use `query-strategy-positions.ts` to see the updated allocation in the Drift strategy.
+8.  **(Optional) Withdraw from Drift Strategy (Manager):** Run `pnpm ts-node src/scripts/manager-withdraw-user.ts` to bring funds back from the Drift spot market into the vault.
+9.  **(Optional) User Withdrawal:** Users can withdraw from the vault as usual using the `user-*` withdrawal scripts. The vault program handles interactions with the strategy if necessary.
+
+### Protocol Integration Details
+
+- **Drift Protocol:** The scripts interact with the Drift Protocol's spot markets via the Voltr Drift Adaptor (`EBN9...`). The necessary program IDs, state accounts, and market indices are defined in `src/constants/drift.ts`. The manager scripts (`manager-deposit-user`, `manager-withdraw-user`) utilize the `@drift-labs/sdk` to correctly format instructions and gather necessary remaining accounts for interacting with Drift.
+- **No Swaps:** It's critical to understand that these scripts assume the vault's base asset (`assetMintAddress` in `config/base.ts`) directly corresponds to the asset of the `driftMarketIndex` chosen in `config/drift.ts`. No automatic asset conversion (swapping) is implemented.
+
+### Updated Project Structure (voltr-drift-scripts)
+
+```
+voltr-drift-scripts
+├── pnpm-lock.yaml
+├── config/
+│   ├── base.ts             # Base vault configuration
+│   └── drift.ts            # NEW: Drift strategy config
+├── README.md               # This file (now including Drift extensions)
+├── package.json            # Project metadata and dependencies
+├── tsconfig.json           # TypeScript compiler options
+└── src
+    ├── constants/
+    │   ├── base.ts         # Base constants (e.g., PROTOCOL_ADMIN)
+    │   └── drift.ts        # NEW: Drift constants (program IDs, markets, adaptor, discriminators)
+    ├── utils/
+    │   └── helper.ts       # Core utility functions (tx sending, ATAs, LUTs)
+    └── scripts/            # Executable scripts
+        ├── user-withdraw-vault.ts
+        ├── user-query-position.ts
+        ├── query-strategy-positions.ts
+        ├── manager-init-user.ts # NEW: Initializes Drift strategy user
+        ├── admin-update-vault.ts
+        ├── manager-deposit-user.ts # NEW: Deposits vault funds into Drift strategy
+        ├── user-request-and-withdraw-vault.ts
+        ├── admin-harvest-fee.ts
+        ├── user-deposit-vault.ts
+        ├── manager-withdraw-user.ts # NEW: Withdraws funds from Drift strategy to vault
+        ├── admin-init-vault.ts
+        ├── admin-add-adaptor.ts # NEW: Adds the Drift adaptor to the vault
+        ├── user-cancel-request-withdraw-vault.ts
+        └── user-request-withdraw-vault.ts
+```
