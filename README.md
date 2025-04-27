@@ -345,29 +345,29 @@ voltr-drift-scripts
 ├── pnpm-lock.yaml
 ├── config/
 │   ├── base.ts             # Base vault configuration
-│   └── drift.ts            # NEW: Drift strategy config
+│   └── drift.ts            # DRIFT ADAPTOR: Drift strategy config
 ├── README.md               # This file (now including Drift extensions)
 ├── package.json            # Project metadata and dependencies
 ├── tsconfig.json           # TypeScript compiler options
 └── src
     ├── constants/
     │   ├── base.ts         # Base constants (e.g., PROTOCOL_ADMIN)
-    │   └── drift.ts        # NEW: Drift constants (program IDs, markets, adaptor, discriminators)
+    │   └── drift.ts        # DRIFT ADAPTOR: Drift constants (program IDs, markets, adaptor, discriminators)
     ├── utils/
     │   └── helper.ts       # Core utility functions (tx sending, ATAs, LUTs)
     └── scripts/            # Executable scripts
         ├── user-withdraw-vault.ts
         ├── user-query-position.ts
         ├── query-strategy-positions.ts
-        ├── manager-init-user.ts # NEW: Initializes Drift strategy user
+        ├── manager-init-user.ts # DRIFT ADAPTOR: Initializes Drift strategy user
         ├── admin-update-vault.ts
-        ├── manager-deposit-user.ts # NEW: Deposits vault funds into Drift strategy
+        ├── manager-deposit-user.ts # DRIFT ADAPTOR: Deposits vault funds into Drift strategy
         ├── user-request-and-withdraw-vault.ts
         ├── admin-harvest-fee.ts
         ├── user-deposit-vault.ts
-        ├── manager-withdraw-user.ts # NEW: Withdraws funds from Drift strategy to vault
+        ├── manager-withdraw-user.ts # DRIFT ADAPTOR: Withdraws funds from Drift strategy to vault
         ├── admin-init-vault.ts
-        ├── admin-add-adaptor.ts # NEW: Adds the Drift adaptor to the vault
+        ├── admin-add-adaptor.ts # DRIFT ADAPTOR: Adds the Drift adaptor to the vault
         ├── user-cancel-request-withdraw-vault.ts
         └── user-request-withdraw-vault.ts
 ```
