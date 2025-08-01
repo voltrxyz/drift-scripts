@@ -130,7 +130,7 @@ const withdrawEarnStrategy = async (
 
   const createWithdrawStrategyIx = await vc.createWithdrawStrategyIx(
     {
-      instructionDiscriminator: Buffer.from(DISCRIMINATOR.WITHDRAW_USER),
+      instructionDiscriminator: Buffer.from(instructionDiscriminator),
       withdrawAmount,
       additionalArgs,
     },

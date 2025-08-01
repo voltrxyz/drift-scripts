@@ -90,16 +90,9 @@ const initDriftEarn = async (
     vaultAssetTokenProgram
   );
 
-  const vaultName = await vc
-    .fetchVaultAccount(vault)
-    .then((vault) => vault.name);
-
-  console.log("Vault name:", vaultName);
-
   const createInitializeStrategyIx = await vc.createInitializeStrategyIx(
     {
       instructionDiscriminator: Buffer.from(instructionDiscriminator),
-      additionalArgs: Buffer.from(vaultName),
     },
     {
       payer,
@@ -162,7 +155,7 @@ const main = async () => {
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
     new BN(DRIFT.SUB_ACCOUNT_ID),
-    driftMarketIndex,
+    34,
     DISCRIMINATOR.INITIALIZE_EARN
   );
 };
