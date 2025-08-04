@@ -55,7 +55,10 @@ const depositEarnStrategy = async (
     protocolProgram
   );
 
-  const { vaultStrategyAuth } = vc.findVaultStrategyAddresses(vault, counterPartyTa);
+  const { vaultStrategyAuth } = vc.findVaultStrategyAddresses(
+    vault,
+    counterPartyTa
+  );
   const [userStats] = PublicKey.findProgramAddressSync(
     [Buffer.from("user_stats"), vaultStrategyAuth.toBuffer()],
     protocolProgram
@@ -85,8 +88,7 @@ const depositEarnStrategy = async (
     connection,
     wallet: new Wallet(payerKp),
     env: "mainnet-beta",
-    authority: vaultStrategyAuth,
-    includeDelegates: true,
+    skipLoadUsers: true,
   });
 
   await driftClient.subscribe();
@@ -100,10 +102,14 @@ const depositEarnStrategy = async (
     { pubkey: state, isSigner: false, isWritable: false },
   ];
 
+  const userAccounts = await driftClient.getUserAccountsForAuthority(
+    vaultStrategyAuth
+  );
+
   remainingAccounts.push(
     ...driftClient.getRemainingAccounts({
-      userAccounts: [driftClient.getUserAccount(0)!],
-      useMarketLastSlotCache: true,
+      userAccounts,
+      useMarketLastSlotCache: false,
       writableSpotMarketIndexes: [marketIndex],
     })
   );

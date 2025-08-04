@@ -89,8 +89,7 @@ const depositDriftStrategy = async (
     connection,
     wallet: new Wallet(payerKp),
     env: "mainnet-beta",
-    authority: vaultStrategyAuth,
-    includeDelegates: true,
+    skipLoadUsers: true,
   });
 
   await driftClient.subscribe();
@@ -104,13 +103,17 @@ const depositDriftStrategy = async (
     { pubkey: state, isSigner: false, isWritable: false },
   ];
 
+  const userAccounts = await driftClient.getUserAccountsForAuthority(
+    vaultStrategyAuth
+  );
+
   remainingAccounts.push(
     ...driftClient.getRemainingAccounts({
-      userAccounts: [driftClient.getUserAccount(0)!],
-      useMarketLastSlotCache: true,
+      userAccounts,
+      useMarketLastSlotCache: false,
       writableSpotMarketIndexes: [marketIndex],
     })
-  );
+  );;
 
   await driftClient.unsubscribe();
 
