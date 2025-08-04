@@ -37,6 +37,7 @@ const connection = new Connection(process.env.HELIUS_RPC_URL!);
 const vc = new VoltrClient(connection);
 
 const initDriftUser = async (
+  delegatee: PublicKey,
   protocolProgram: PublicKey,
   state: PublicKey,
   subAccountId: BN
@@ -93,6 +94,7 @@ const initDriftUser = async (
         { pubkey: userStats, isSigner: false, isWritable: true },
         { pubkey: user, isSigner: false, isWritable: true },
         { pubkey: state, isSigner: false, isWritable: true },
+        { pubkey: delegatee, isSigner: false, isWritable: false },
         { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
       ],
       adaptorProgram: new PublicKey(ADAPTOR_PROGRAM_ID),
@@ -140,6 +142,7 @@ const initDriftUser = async (
 
 const main = async () => {
   await initDriftUser(
+    payer,
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
     new BN(DRIFT.SUB_ACCOUNT_ID)
