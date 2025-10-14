@@ -22,6 +22,7 @@ import {
   vaultAddress,
 } from "../../config/base";
 import { ADAPTOR_PROGRAM_ID, DISCRIMINATOR, DRIFT } from "../constants/drift";
+import { enableMarginTrading } from "../../config/drift";
 
 const payerKpFile = fs.readFileSync(process.env.MANAGER_FILE_PATH!, "utf-8");
 const payerKpData = JSON.parse(payerKpFile);
@@ -40,10 +41,12 @@ const initDriftUser = async (
   delegatee: PublicKey,
   protocolProgram: PublicKey,
   state: PublicKey,
-  subAccountId: BN
+  subAccountId: BN,
+  enableMarginTrading: boolean,
+  strategySeed: "drift_user" | "drift_user_curve"
 ) => {
   const [strategy] = PublicKey.findProgramAddressSync(
-    [Buffer.from("drift_user")],
+    [Buffer.from(strategySeed)],
     new PublicKey(ADAPTOR_PROGRAM_ID)
   );
 
@@ -77,12 +80,20 @@ const initDriftUser = async (
     .fetchVaultAccount(vault)
     .then((vault) => vault.name);
 
-  console.log("Vault name:", vaultName);
+  console.log("Vault name:", Buffer.from(vaultName).toString("utf-8"));
+
+  let vaultNameBuffer = Buffer.from(vaultName);
+  let enableMarginTradingBuffer = Buffer.from(enableMarginTrading ? [1] : [0]);
+
+  let additionalArgs = Buffer.concat(
+    [vaultNameBuffer, enableMarginTradingBuffer],
+    vaultNameBuffer.length + enableMarginTradingBuffer.length
+  );
 
   const createInitializeStrategyIx = await vc.createInitializeStrategyIx(
     {
       instructionDiscriminator: Buffer.from(DISCRIMINATOR.INITIALIZE_USER),
-      additionalArgs: Buffer.from(vaultName),
+      additionalArgs,
     },
     {
       payer,
@@ -145,7 +156,9 @@ const main = async () => {
     payer,
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
-    new BN(DRIFT.SUB_ACCOUNT_ID)
+    new BN(DRIFT.SUB_ACCOUNT_ID),
+    true,
+    "drift_user_curve"
   );
 };
 
