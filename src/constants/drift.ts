@@ -26,6 +26,10 @@ export const DRIFT = {
       MARKET_INDEX: 28,
       ORACLE: "4VMtKepA6iFwMTJ7bBbdcGxavNRKiDjxxRr1CaB2NnFJ",
     },
+    USDC_JLP: {
+      MARKET_INDEX: 34,
+      ORACLE: "9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV",
+    },
   },
 };
 
