@@ -72,7 +72,7 @@ const initializeDirectWithdrawStrategy = async (
     undefined
   );
   console.log(
-    "Kvault direct withdraw strategy initialized with signature:",
+    "Drift earn direct withdraw strategy initialized with signature:",
     txSig
   );
 
