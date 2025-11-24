@@ -24,7 +24,7 @@ export const DRIFT = {
     },
     USDS: {
       MARKET_INDEX: 28,
-      ORACLE: "7pT9mxKXyvfaZKeKy1oe2oV2K1RFtF7tPEJHUY3h2vVV",
+      ORACLE: "4VMtKepA6iFwMTJ7bBbdcGxavNRKiDjxxRr1CaB2NnFJ",
     },
   },
 };
