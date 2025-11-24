@@ -155,7 +155,7 @@ const main = async () => {
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
     new BN(DRIFT.SUB_ACCOUNT_ID),
-    34,
+    driftMarketIndex,
     DISCRIMINATOR.INITIALIZE_EARN
   );
 };
