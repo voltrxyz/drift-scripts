@@ -157,7 +157,7 @@ const main = async () => {
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
     new BN(DRIFT.SUB_ACCOUNT_ID),
-    true,
+    enableMarginTrading,
     "drift_user_curve"
   );
 };
