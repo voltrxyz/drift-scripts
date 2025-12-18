@@ -17,8 +17,11 @@ import {
   vaultAddress,
 } from "../../config/base";
 import { BN } from "@coral-xyz/anchor";
-import { ADAPTOR_PROGRAM_ID, DISCRIMINATOR, DRIFT } from "../constants/drift";
-import { driftMarketIndex } from "../../config/drift";
+import { ADAPTOR_PROGRAM_ID, DRIFT } from "../constants/drift";
+import {
+  directWithdrawDiscriminator,
+  driftMarketIndex,
+} from "../../config/drift";
 
 const initializeDirectWithdrawStrategy = async (
   connection: Connection,
@@ -30,10 +33,13 @@ const initializeDirectWithdrawStrategy = async (
   useLookupTable: boolean,
   lookupTableAddress: PublicKey,
   marketIndex: number,
-  instructionDiscriminator: Buffer | null = null,
+  instructionDiscriminator: Buffer,
   additionalArgs: Buffer | null = null,
   allowUserArgs: boolean = false
 ) => {
+  if (instructionDiscriminator.length !== 8) {
+    throw new Error("Instruction discriminator must be 4 bytes");
+  }
   const vc = new VoltrClient(connection);
 
   let transactionIxs: TransactionInstruction[] = [];
@@ -127,7 +133,7 @@ const main = async () => {
     useLookupTable,
     new PublicKey(lookupTableAddress),
     driftMarketIndex,
-    Buffer.from(DISCRIMINATOR.WITHDRAW_EARN),
+    Buffer.from(directWithdrawDiscriminator),
     new BN(driftMarketIndex).toArrayLike(Buffer, "le", 2),
     false
   );
