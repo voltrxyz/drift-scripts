@@ -11,7 +11,7 @@ import {
   setupAddressLookupTable,
   setupTokenAccount,
 } from "../utils/helper";
-import { BN } from "@coral-xyz/anchor";
+import { BN, Wallet } from "@coral-xyz/anchor";
 import * as fs from "fs";
 import { VoltrClient } from "@voltr/vault-sdk";
 import {
@@ -22,7 +22,8 @@ import {
   vaultAddress,
 } from "../../config/base";
 import { ADAPTOR_PROGRAM_ID, DISCRIMINATOR, DRIFT } from "../constants/drift";
-import { enableMarginTrading } from "../../config/drift";
+import { driftMarketIndex, enableMarginTrading } from "../../config/drift";
+import { DriftClient } from "@drift-labs/sdk";
 
 const payerKpFile = fs.readFileSync(process.env.ADMIN_FILE_PATH!, "utf-8");
 const payerKpData = JSON.parse(payerKpFile);
@@ -47,6 +48,7 @@ const initDriftUser = async (
   delegatee: PublicKey,
   protocolProgram: PublicKey,
   state: PublicKey,
+  marketIndex: number,
   subAccountId: BN,
   enableMarginTrading: boolean,
   strategySeed: "drift_user" | "drift_user_curve"
@@ -82,6 +84,39 @@ const initDriftUser = async (
     vaultAssetTokenProgram
   );
 
+  const remainingAccounts = [
+    { pubkey: protocolProgram, isSigner: false, isWritable: false },
+    { pubkey: userStats, isSigner: false, isWritable: true },
+    { pubkey: user, isSigner: false, isWritable: true },
+    { pubkey: state, isSigner: false, isWritable: true },
+    { pubkey: delegatee, isSigner: false, isWritable: false },
+    { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+  ];
+
+  const driftClient = new DriftClient({
+    connection,
+    wallet: new Wallet(payerKp),
+    env: "mainnet-beta",
+    skipLoadUsers: true,
+  });
+
+  await driftClient.subscribe();
+
+  const userAccounts = await driftClient.getUserAccountsForAuthority(
+    vaultStrategyAuth
+  );
+
+  if (userAccounts.length > 0)
+    remainingAccounts.push(
+      ...driftClient.getRemainingAccounts({
+        userAccounts,
+        useMarketLastSlotCache: false,
+        writableSpotMarketIndexes: [marketIndex],
+      })
+    );;
+
+  await driftClient.unsubscribe();
+  
   const vaultName = await vc
     .fetchVaultAccount(vault)
     .then((vault) => vault.name);
@@ -106,14 +141,7 @@ const initDriftUser = async (
       vault,
       manager: payer,
       strategy,
-      remainingAccounts: [
-        { pubkey: protocolProgram, isSigner: false, isWritable: false },
-        { pubkey: userStats, isSigner: false, isWritable: true },
-        { pubkey: user, isSigner: false, isWritable: true },
-        { pubkey: state, isSigner: false, isWritable: true },
-        { pubkey: delegatee, isSigner: false, isWritable: false },
-        { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
-      ],
+      remainingAccounts,
       adaptorProgram: new PublicKey(ADAPTOR_PROGRAM_ID),
     }
   );
@@ -162,6 +190,7 @@ const main = async () => {
     delegatee,
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
+    driftMarketIndex,
     new BN(DRIFT.SUB_ACCOUNT_ID),
     enableMarginTrading,
     "drift_user"
