@@ -30,6 +30,12 @@ const payerSecret = Uint8Array.from(payerKpData);
 const payerKp = Keypair.fromSecretKey(payerSecret);
 const payer = payerKp.publicKey;
 
+const delegateeKpFile = fs.readFileSync(process.env.MANAGER_FILE_PATH!, "utf-8");
+const delegateeKpData = JSON.parse(delegateeKpFile);
+const delegateeSecret = Uint8Array.from(delegateeKpData);
+const delegateeKp = Keypair.fromSecretKey(delegateeSecret);
+const delegatee = delegateeKp.publicKey;
+
 const vault = new PublicKey(vaultAddress);
 const vaultAssetMint = new PublicKey(assetMintAddress);
 const vaultAssetTokenProgram = new PublicKey(assetTokenProgram);
@@ -153,12 +159,12 @@ const initDriftUser = async (
 
 const main = async () => {
   await initDriftUser(
-    payer,
+    delegatee,
     new PublicKey(DRIFT.PROGRAM_ID),
     new PublicKey(DRIFT.SPOT.STATE),
     new BN(DRIFT.SUB_ACCOUNT_ID),
     enableMarginTrading,
-    "drift_user_curve"
+    "drift_user"
   );
 };
 
